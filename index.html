@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<title>👑 자지 그리면 디진다 👑</title>
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-app.js";
+  import { getDatabase, ref, push, onChildAdded } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-database.js";
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyAiz9-ZDBPQh-wOMlMycmE0yVMGBNUf4cM",
+    authDomain: "ddong-6a832.firebaseapp.com",
+    databaseURL: "https://ddong-6a832-default-rtdb.firebaseio.com/",
+    projectId: "ddong-6a832",
+    storageBucket: "ddong-6a832.appspot.com",
+    messagingSenderId: "366828657361",
+    appId: "1:366828657361:web:e84ad105196ad7096b83f0"
+  };
+  const app = initializeApp(firebaseConfig);
+  const db = getDatabase(app);
+  const galleryRef = ref(db, 'gallery');
+
+  const canvas = document.createElement('canvas');
+  canvas.width = 600;
+  canvas.height = 400;
+  const ctx = canvas.getContext('2d');
+  let painting = false;
+  let currentColor = "#ff69b4";
+  let brushSize = 5;
+
+  document.addEventListener('DOMContentLoaded', () => {
+    document.getElementById('drawArea').appendChild(canvas);
+  });
+
+  function getCoords(e) {
+    const rect = canvas.getBoundingClientRect();
+    if(e.touches) {
+      return { x: e.touches[0].clientX - rect.left, y: e.touches[0].clientY - rect.top };
+    } else {
+      return { x: e.clientX - rect.left, y: e.clientY - rect.top };
+    }
+  }
+
+  function startPosition(e){ painting = true; draw(e); }
+  function finishedPosition(){ painting = false; ctx.beginPath(); }
+  function draw(e){
+    if(!painting) return;
+    const {x, y} = getCoords(e);
+    ctx.lineWidth = brushSize;
+    ctx.lineCap = 'round';
+    ctx.lineTo(x, y);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(x, y);
+  }
+
+  // 기본 색상 모드
+  function setColor(color) {
+    ctx.globalCompositeOperation = "source-over";
+    ctx.strokeStyle = color;
+  }
+
+  // 지우개 모드
+  function activateEraser() {
+    ctx.globalCompositeOperation = "destination-out";
+  }
+
+  // 브러시 크기 변경
+  function changeSize(size) { brushSize = size; }
+
+  // 마우스 이벤트
+  canvas.addEventListener('mousedown', startPosition);
+  canvas.addEventListener('mouseup', finishedPosition);
+  canvas.addEventListener('mousemove', draw);
+
+  // 터치 이벤트
+  canvas.addEventListener('touchstart', (e) => { e.preventDefault(); startPosition(e); });
+  canvas.addEventListener('touchmove', (e) => { e.preventDefault(); draw(e); });
+  canvas.addEventListener('touchend', (e) => { e.preventDefault(); finishedPosition(); });
+
+  // 그림 저장
+  document.addEventListener('DOMContentLoaded', () => {
+    document.getElementById('saveBtn').addEventListener('click', async () => {
+      const name = document.getElementById('nameInput').value || '공주';
+      const imgData = canvas.toDataURL();
+      push(galleryRef, {url: imgData, name});
+      ctx.clearRect(0,0,canvas.width,canvas.height);
+    });
+  });
+
+  // 갤러리 표시
+  onChildAdded(galleryRef, snapshot => {
+    const {url, name} = snapshot.val();
+    const gallery = document.getElementById('gallery');
+    const card = document.createElement('div');
+    card.className = 'card';
+    card.innerHTML = `<img src="${url}" alt="그림"><p>✨ ${name} ✨</p>`;
+    gallery.prepend(card);
+  });
+
+  // export
+  window.setColor = setColor;
+  window.activateEraser = activateEraser;
+  window.changeSize = changeSize;
+</script>
+
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Parisienne&family=Patrick+Hand&display=swap');
+
+body { font-family: 'Patrick Hand', cursive; background: linear-gradient(to bottom,#ffe6f9,#fff0f8); display:flex; flex-direction:column; align-items:center; padding:20px; }
+h1 { font-family: 'Parisienne', cursive; font-size:2.5em; color:#ff4da6; text-shadow:3px 3px 8px #ffb6e6; margin-bottom:20px; text-align:center; }
+#mainArea { display:flex; align-items:flex-start; gap:20px; }
+#drawArea { border: 4px dashed #ff66cc; border-radius:20px; padding:10px; margin-bottom:10px; background:#fffafc; box-shadow:0 0 20px rgba(255,182,193,0.7); touch-action:none; }
+#controls { margin:10px 0; display:flex; flex-wrap:wrap; gap:10px; justify-content:center; }
+.palette { width:30px; height:30px; border-radius:50%; border:2px solid #fff; cursor:pointer; box-shadow:0 0 5px rgba(0,0,0,0.2); }
+.palette:hover { transform:scale(1.2); }
+button { background:#ffb6e6; border:none; padding:8px 15px; border-radius:12px; font-weight:bold; cursor:pointer; font-family:'Patrick Hand'; }
+button:hover { background:#ff66cc; color:#fff; }
+#gallery { display:grid; grid-template-columns:repeat(auto-fill,minmax(200px,1fr)); gap:20px; width:90%; margin-top:20px; }
+.card { background:#fff0fa; border:3px solid #ff99cc; border-radius:15px; box-shadow:3px3px10px rgba(255,105,180,0.5); padding:10px; text-align:center; transition:0.2s; }
+.card:hover { transform:scale(1.05); box-shadow:5px5px15px rgba(255,105,180,0.7); }
+.card img { width:100%; border-radius:10px; }
+.card p { margin:5px 0 0; color:#d63384; font-weight:bold; }
+.princessArt { width:200px; margin-top:20px; }
+</style>
+</head>
+<body>
+  <h1>👑 자지 그리면 디진다 👑</h1>
+
+  <div id="mainArea">
+    <div>
+      <div id="drawArea"></div>
+
+      <div id="controls">
+        <div class="palette" style="background:#ff69b4" onclick="setColor('#ff69b4')"></div>
+        <div class="palette" style="background:#ff1493" onclick="setColor('#ff1493')"></div>
+        <div class="palette" style="background:#ffccff" onclick="setColor('#ffccff')"></div>
+        <div class="palette" style="background:#ffd700" onclick="setColor('#ffd700')"></div>
+        <div class="palette" style="background:#00bfff" onclick="setColor('#00bfff')"></div>
+        <div class="palette" style="background:#32cd32" onclick="setColor('#32cd32')"></div>
+        <button onclick="activateEraser()">🩷 지우개</button>
+        <button onclick="changeSize(3)">얇게</button>
+        <button onclick="changeSize(7)">보통</button>
+        <button onclick="changeSize(15)">굵게</button>
+      </div>
+
+      <input type="text" id="nameInput" placeholder="공주 이름 입력">
+      <button id="saveBtn">💌 그림 저장 & 갤러리 추가</button>
+    </div>
+
+    <!-- 옆에 네가 올린 사진 -->
+    <img src="c02e09e6eb2102a0e8a647c9b0bba161.jpg" alt="공주님" class="princessArt"/>
+  </div>
+
+  <div id="gallery"></div>
+</body>
+</html>
